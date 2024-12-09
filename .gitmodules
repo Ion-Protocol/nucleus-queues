@@ -1,0 +1,27 @@
+[submodule "lib/forge-std"]
+	path = lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/solmate"]
+	path = lib/solmate
+	url = https://github.com/transmissions11/solmate
+[submodule "lib/openzeppelin-contracts"]
+	path = lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "lib/ion-protocol"]
+	path = lib/ion-protocol
+	url = https://github.com/Ion-Protocol/nucleus-boring-vault
+[submodule "lib/createx"]
+	path = lib/createx
+	url = https://github.com/pcaversaccio/createx
+[submodule "lib/executooor"]
+	path = lib/executooor
+	url = https://github.com/Rubilmax/executooor
+[submodule "lib/v3-core"]
+	path = lib/v3-core
+	url = https://github.com/Uniswap/v3-core
+[submodule "lib/v3-periphery"]
+	path = lib/v3-periphery
+	url = https://github.com/Uniswap/v3-periphery
+[submodule "lib/1inch-v2-contracts"]
+	path = lib/1inch-v2-contracts
+	url = https://github.com/1inch/1inch-v2-contracts

@@ -1,0 +1,49 @@
+[profile.default]
+# Sets the concrete solc version to use
+# This overrides the `auto_detect_solc` value
+auto_detect_solc = true
+evm_version = 'cancun'
+optimizer = true
+optimizer_runs = 200
+fs_permissions = [{ access = "read-write", path = "./" }]
+cbor_metadata = true
+
+libs = [
+    'lib',
+    'node_modules/@layerzerolabs/toolbox-foundry/lib',
+    'node_modules',
+]
+
+[rpc_endpoints]
+mainnet = "${MAINNET_RPC_URL}"
+polygon = "${MATIC_RPC_URL}"
+bsc = "${BNB_RPC_URL}"
+avalanche = "${AVALANCHE_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
+optimism = "${OPTIMISM_RPC_URL}"
+base = "${BASE_RPC_URL}"
+sepolia_main = "${SEPOLIA_RPC_URL}"
+sei_devnet = "${SEI_DEVNET_RPC_URL}"
+op_sepolia = "${OP_SEPOLIA_RPC_URL}"
+
+
+[etherscan]
+# mainnet = { key = "${ETHERSCAN_KEY}", url = "https://api.etherscan.io/api" }
+# polygon = { key = "${POLYGONSCAN_KEY}" }
+# bsc = { key = "${BSCSCAN_KEY}" }
+# avalanche = { key = "${SNOWTRACE_KEY}" }
+# arbitrum = { key = "${ARBISCAN_KEY}" }
+# optimism = { key = "${OPTIMISMSCAN_KEY}" }
+# base = { key = "${BASESCAN_KEY}" }
+
+tenderly = { key = "${TENDERLY_ACCESS_KEY}", chain = 99099127, url = "${TENDERLY_ADMIN_RPC_URL}/verify/etherscan" }
+
+[fmt]
+bracket_spacing = true
+int_types = "long"
+line_length = 120
+multiline_func_header = "all"
+number_underscore = "thousands"
+quote_style = "double"
+tab_width = 4
+wrap_comments = true
