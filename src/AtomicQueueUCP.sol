@@ -109,6 +109,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     constructor(address _owner, address[] memory approvedSolveCallers) Ownable(_owner) {
         for (uint256 i; i < approvedSolveCallers.length; ++i) {
             isApprovedSolveCaller[approvedSolveCallers[i]] = true;
+            emit SolverCallerToggled(approvedSolveCallers[i], true);
         }
     }
 
