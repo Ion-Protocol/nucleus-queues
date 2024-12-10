@@ -44,20 +44,20 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     }
 
     /**
-    * @notice Used in `viewSolveMetaData` helper function to return data in a clean struct.
-    * @param user the address of the user
-    * @param flags 8 bits indicating the state of the user. Multiple flags can be set simultaneously.
-    *             Each bit represents a different error condition:
-    *             From right to left:
-    *             - 0: indicates user deadline has passed
-    *             - 1: indicates user request has zero offer amount
-    *             - 2: indicates user does not have enough offer asset in wallet
-    *             - 3: indicates user has not given AtomicQueue approval
-    *             - 4: indicates user's atomic price is above clearing price
-    *             A value of 0 means no errors (user is solvable).
-    * @param assetsToOffer the amount of offer asset to solve
-    * @param assetsForWant the amount of assets users want for their offer assets
-    */
+     * @notice Used in `viewSolveMetaData` helper function to return data in a clean struct.
+     * @param user the address of the user
+     * @param flags 8 bits indicating the state of the user. Multiple flags can be set simultaneously.
+     *             Each bit represents a different error condition:
+     *             From right to left:
+     *             - 0: indicates user deadline has passed
+     *             - 1: indicates user request has zero offer amount
+     *             - 2: indicates user does not have enough offer asset in wallet
+     *             - 3: indicates user has not given AtomicQueue approval
+     *             - 4: indicates user's atomic price is above clearing price
+     *             A value of 0 means no errors (user is solvable).
+     * @param assetsToOffer the amount of offer asset to solve
+     * @param assetsForWant the amount of assets users want for their offer assets
+     */
     struct SolveMetaData {
         address user; // User's address
         uint8 flags; // Bitfield for various error conditions
@@ -95,10 +95,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         uint256 timestamp
     );
 
-    event SolverCallerToggled(
-        address caller,
-        bool isApproved
-    );
+    event SolverCallerToggled(address caller, bool isApproved);
 
     // ========================================= STORAGE =========================================
 
@@ -229,7 +226,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         external
         nonReentrant
     {
-        if(!isApprovedSolveCaller[msg.sender]) revert AtomicQueue__UnapprovedSolveCaller(msg.sender);
+        if (!isApprovedSolveCaller[msg.sender]) revert AtomicQueue__UnapprovedSolveCaller(msg.sender);
         uint8 offerDecimals = offer.decimals();
         uint256 assetsToOffer = _handleFirstLoop(offer, want, users, clearingPrice, solver);
         uint256 assetsForWant = _calculateAssetAmount(assetsToOffer, clearingPrice, offerDecimals);
@@ -282,7 +279,6 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     )
         internal
     {
-
         for (uint256 i; i < users.length; ++i) {
             AtomicRequest storage request = userAtomicRequest[users[i]][offer][want];
             bytes32 key = keccak256(abi.encode(users[i], offer, want));
