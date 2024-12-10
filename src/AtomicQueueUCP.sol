@@ -29,6 +29,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
 
     /**
      * @notice Stores request information needed to fulfill a users atomic request.
+     * @dev The `inSolve` bool is kept in this queue iteration for backwards compatibility, but not utilized.
      * @param deadline unix timestamp for when request is no longer valid
      * @param atomicPrice the price in terms of `want` asset the user wants their `offer` assets "sold" at
      * @dev atomicPrice MUST be in terms of `want` asset decimals.
@@ -43,18 +44,20 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @notice Used in `viewSolveMetaData` helper function to return data in a clean struct.
-     * @param user the address of the user
-     * @param flags 8 bits indicating the state of the user only the first 4 bits are used XXXX0000
-     *              Either all flags are false(user is solvable) or only 1 is true(an error occurred).
-     *              From right to left
-     *              - 0: indicates user deadline has passed.
-     *              - 1: indicates user request has zero offer amount.
-     *              - 2: indicates user does not have enough offer asset in wallet.
-     *              - 3: indicates user has not given AtomicQueue approval.
-     * @param assetsToOffer the amount of offer asset to solve
-     * @param assetsForWant the amount of assets users want for their offer assets
-     */
+    * @notice Used in `viewSolveMetaData` helper function to return data in a clean struct.
+    * @param user the address of the user
+    * @param flags 8 bits indicating the state of the user. Multiple flags can be set simultaneously.
+    *             Each bit represents a different error condition:
+    *             From right to left:
+    *             - 0: indicates user deadline has passed
+    *             - 1: indicates user request has zero offer amount
+    *             - 2: indicates user does not have enough offer asset in wallet
+    *             - 3: indicates user has not given AtomicQueue approval
+    *             - 4: indicates user's atomic price is above clearing price
+    *             A value of 0 means no errors (user is solvable).
+    * @param assetsToOffer the amount of offer asset to solve
+    * @param assetsForWant the amount of assets users want for their offer assets
+    */
     struct SolveMetaData {
         address user; // User's address
         uint8 flags; // Bitfield for various error conditions
@@ -92,6 +95,11 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         uint256 timestamp
     );
 
+    event SolverCallerToggled(
+        address caller,
+        bool isApproved
+    );
+
     // ========================================= STORAGE =========================================
 
     /**
@@ -114,8 +122,11 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
      * @param solveCallers an array of addresses to toggle approval for
      */
     function toggleApprovedSolveCallers(address[] memory solveCallers) external onlyOwner {
+        bool isApproved;
         for (uint256 i; i < solveCallers.length; ++i) {
-            isApprovedSolveCaller[solveCallers[i]] = !isApprovedSolveCaller[solveCallers[i]];
+            isApproved = !isApprovedSolveCaller[solveCallers[i]];
+            isApprovedSolveCaller[solveCallers[i]] = isApproved;
+            emit SolverCallerToggled(solveCallers[i], isApproved);
         }
     }
 
