@@ -247,26 +247,33 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         internal
         returns (uint256 assetsToOffer)
     {
-        for (uint256 i; i < users.length; ++i) {
-            AtomicRequest storage request = userAtomicRequest[users[i]][offer][want];
-            bytes32 key = keccak256(abi.encode(users[i], offer, want));
+        
+        for (uint256 i = users.length; i > 0;) {
+            unchecked {
+                --i;
+            }
+            
+            address user = users[i];
+            AtomicRequest memory request = userAtomicRequest[user][offer][want];
+            bytes32 key = keccak256(abi.encode(user, offer, want));
 
             uint256 isInSolve;
             assembly {
                 isInSolve := tload(key)
             }
 
-            if (isInSolve == 1) revert AtomicQueue__UserRepeated(users[i]);
-            if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(users[i]);
-            if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount(users[i]);
-            if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(users[i]);
+            if (isInSolve == 1) revert AtomicQueue__UserRepeated(user);
+            if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(user);
+            if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount(user);
+            if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(user);
 
             assembly {
                 tstore(key, 1)
             }
 
             assetsToOffer += request.offerAmount;
-            offer.safeTransferFrom(users[i], solver, request.offerAmount);
+            offer.safeTransferFrom(user, solver, request.offerAmount);
+
         }
     }
 
@@ -280,28 +287,33 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     )
         internal
     {
-        for (uint256 i; i < users.length; ++i) {
+        for (uint256 i = users.length; i > 0;) {
+            unchecked {
+                --i;
+            }
+            address user = users[i];
             AtomicRequest storage request = userAtomicRequest[users[i]][offer][want];
-            bytes32 key = keccak256(abi.encode(users[i], offer, want));
+            bytes32 key = keccak256(abi.encode(user, offer, want));
 
             uint256 isInSolve;
             assembly {
                 isInSolve := tload(key)
             }
 
-            if (isInSolve == 0) revert AtomicQueue__UserNotInSolve(users[i]);
+            if (isInSolve == 0) revert AtomicQueue__UserNotInSolve(user);
 
             uint256 assetsToUser = _calculateAssetAmount(request.offerAmount, clearingPrice, offerDecimals);
-            want.safeTransferFrom(solver, users[i], assetsToUser);
+            want.safeTransferFrom(solver, user, assetsToUser);
 
             emit AtomicRequestFulfilled(
-                users[i], address(offer), address(want), request.offerAmount, assetsToUser, block.timestamp
+                user, address(offer), address(want), request.offerAmount, assetsToUser, block.timestamp
             );
 
             request.offerAmount = 0;
             assembly {
                 tstore(key, 0)
             }
+
         }
     }
 
