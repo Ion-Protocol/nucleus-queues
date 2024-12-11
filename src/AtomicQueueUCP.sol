@@ -247,12 +247,11 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         internal
         returns (uint256 assetsToOffer)
     {
-        
         for (uint256 i = users.length; i > 0;) {
             unchecked {
                 --i;
             }
-            
+
             address user = users[i];
             AtomicRequest memory request = userAtomicRequest[user][offer][want];
             bytes32 key = keccak256(abi.encode(user, offer, want));
@@ -273,7 +272,6 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
 
             assetsToOffer += request.offerAmount;
             offer.safeTransferFrom(user, solver, request.offerAmount);
-
         }
     }
 
@@ -313,7 +311,6 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
             assembly {
                 tstore(key, 0)
             }
-
         }
     }
 

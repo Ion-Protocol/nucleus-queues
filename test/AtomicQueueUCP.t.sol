@@ -125,7 +125,7 @@ contract AtomicQueueUCPTest is Test {
 
         address[] memory users = new address[](100);
 
-        for(uint i=0; i < 100; ++i){
+        for (uint256 i = 0; i < 100; ++i) {
             address user = address(uint160(i));
             deal(address(offerToken), user, 100e18);
 
@@ -147,8 +147,7 @@ contract AtomicQueueUCPTest is Test {
         uint256 solverWantBalanceBefore = wantToken.balanceOf(address(solver));
 
         vm.prank(address(solver));
-        queue.solve(offerToken, wantToken, users, runData, address(solver), clearingPrice);  
-
+        queue.solve(offerToken, wantToken, users, runData, address(solver), clearingPrice);
     }
 
     function test_BasicSolve() public {
