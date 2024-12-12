@@ -25,3 +25,6 @@
 [submodule "lib/1inch-v2-contracts"]
 	path = lib/1inch-v2-contracts
 	url = https://github.com/1inch/1inch-v2-contracts
+[submodule "lib/nucleus-boring-vault"]
+	path = lib/nucleus-boring-vault
+	url = https://github.com/Ion-Protocol/nucleus-boring-vault
