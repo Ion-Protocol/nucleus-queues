@@ -115,6 +115,41 @@ contract AtomicQueueUCPTest is Test {
         assertFalse(isValid);
     }
 
+    function test_BasicSolve_gas() public {
+        AtomicQueueUCP.AtomicRequest memory request = AtomicQueueUCP.AtomicRequest({
+            deadline: uint64(block.timestamp + 1 hours),
+            atomicPrice: 5e6,
+            offerAmount: 1e18,
+            inSolve: false
+        });
+
+        address[] memory users = new address[](100);
+
+        for (uint256 i = 0; i < 100; ++i) {
+            address user = address(uint160(i));
+            deal(address(offerToken), user, 100e18);
+
+            vm.startPrank(user);
+            offerToken.approve(address(queue), type(uint256).max);
+
+            queue.updateAtomicRequest(offerToken, wantToken, request);
+            vm.stopPrank();
+
+            users[i] = user;
+        }
+
+        uint256 clearingPrice = 5e6;
+        bytes memory runData = abi.encode(clearingPrice);
+
+        uint256 userOfferBalanceBefore = offerToken.balanceOf(USER_ONE);
+        uint256 userWantBalanceBefore = wantToken.balanceOf(USER_ONE);
+        uint256 solverOfferBalanceBefore = offerToken.balanceOf(address(solver));
+        uint256 solverWantBalanceBefore = wantToken.balanceOf(address(solver));
+
+        vm.prank(address(solver));
+        queue.solve(offerToken, wantToken, users, runData, address(solver), clearingPrice);
+    }
+
     function test_BasicSolve() public {
         AtomicQueueUCP.AtomicRequest memory request = AtomicQueueUCP.AtomicRequest({
             deadline: uint64(block.timestamp + 1 hours),
