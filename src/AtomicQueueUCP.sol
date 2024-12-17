@@ -229,8 +229,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     {
         if (!isApprovedSolveCaller[msg.sender]) revert AtomicQueue__UnapprovedSolveCaller(msg.sender);
         uint8 offerDecimals = offer.decimals();
-        uint256 assetsToOffer = _handleFirstLoop(offer, want, users, clearingPrice, solver);
-        uint256 assetsForWant = _calculateAssetAmount(assetsToOffer, clearingPrice, offerDecimals);
+        (uint256 assetsToOffer, uint256 assetsForWant) = _handleFirstLoop(offer, want, users, clearingPrice, solver, offerDecimals);
 
         IAtomicSolver(solver).finishSolve(runData, msg.sender, offer, want, assetsToOffer, assetsForWant);
 
@@ -242,36 +241,22 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         ERC20 want,
         address[] calldata users,
         uint256 clearingPrice,
-        address solver
+        address solver,
+        uint8 offerDecimals
     )
         internal
-        returns (uint256 assetsToOffer)
+        returns (uint256 assetsToOffer, uint256 assetsForWant)
     {
         for (uint256 i = users.length; i > 0;) {
             unchecked {
                 --i;
             }
 
-            address user = users[i];
-            AtomicRequest memory request = userAtomicRequest[user][offer][want];
-            bytes32 key = keccak256(abi.encode(user, offer, want));
-
-            uint256 isInSolve;
-            assembly {
-                isInSolve := tload(key)
-            }
-
-            if (isInSolve == 1) revert AtomicQueue__UserRepeated(user);
-            if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(user);
-            if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount(user);
-            if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(user);
-
-            assembly {
-                tstore(key, 1)
-            }
+            AtomicRequest memory request = _firstLoopHelper(users[i], offer, want, clearingPrice, solver);
 
             assetsToOffer += request.offerAmount;
-            offer.safeTransferFrom(user, solver, request.offerAmount);
+            assetsForWant += _calculateAssetAmount(request.offerAmount, clearingPrice, offerDecimals);
+
         }
     }
 
@@ -391,5 +376,35 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         returns (uint256)
     {
         return clearingPrice.mulDivDown(offerAmount, 10 ** offerDecimals);
+    }
+
+    function _firstLoopHelper(
+        address user,
+        ERC20 offer,
+        ERC20 want,
+        uint256 clearingPrice,
+        address solver
+    )
+        internal
+        returns (AtomicRequest memory request)
+    {
+        request = userAtomicRequest[user][offer][want];
+        bytes32 key = keccak256(abi.encode(user, offer, want));
+
+        uint256 isInSolve;
+        assembly {
+            isInSolve := tload(key)
+        }
+
+        if (isInSolve == 1) revert AtomicQueue__UserRepeated(user);
+        if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(user);
+        if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount(user);
+        if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(user);
+
+        assembly {
+            tstore(key, 1)
+        }
+
+        offer.safeTransferFrom(user, solver, request.offerAmount);
     }
 }
