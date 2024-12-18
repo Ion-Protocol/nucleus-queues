@@ -29,18 +29,17 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
 
     /**
      * @notice Stores request information needed to fulfill a users atomic request.
-     * @dev The `inSolve` bool is kept in this queue iteration for backwards compatibility, but not utilized.
      * @param deadline unix timestamp for when request is no longer valid
      * @param atomicPrice the price in terms of `want` asset the user wants their `offer` assets "sold" at
      * @dev atomicPrice MUST be in terms of `want` asset decimals.
      * @param offerAmount the amount of `offer` asset the user wants converted to `want` asset
-     * @param inSolve bool used during solves to prevent duplicate users, and to prevent redoing multiple checks
+     * @param recipient the address to send the `want` asset to
      */
     struct AtomicRequest {
         uint64 deadline; // Timestamp when request expires
-        uint88 atomicPrice; // User's limit price in want asset decimals
+        uint96 atomicPrice; // User's limit price in want asset decimals
         uint96 offerAmount; // Amount of offer asset to sell
-        bool inSolve; // Prevents double-processing in solve
+        address recipient; // Address to send want asset to
     }
 
     /**
@@ -80,6 +79,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         address user,
         address offerToken,
         address wantToken,
+        address recipient,
         uint256 amount,
         uint256 deadline,
         uint256 minPrice,
@@ -90,6 +90,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         address user,
         address offerToken,
         address wantToken,
+        address recipient,
         uint256 offerAmountSpent,
         uint256 wantAmountReceived,
         uint256 timestamp
@@ -190,12 +191,14 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         request.deadline = userRequest.deadline;
         request.atomicPrice = userRequest.atomicPrice;
         request.offerAmount = userRequest.offerAmount;
+        request.recipient = userRequest.recipient;
 
         // Emit update event with full request details
         emit AtomicRequestUpdated(
             msg.sender,
             address(offer),
             address(want),
+            userRequest.recipient,
             userRequest.offerAmount,
             userRequest.deadline,
             userRequest.atomicPrice,
@@ -286,10 +289,10 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
             if (isInSolve == 0) revert AtomicQueue__UserNotInSolve(user);
 
             uint256 assetsToUser = _calculateAssetAmount(request.offerAmount, clearingPrice, offerDecimals);
-            want.safeTransferFrom(solver, user, assetsToUser);
+            want.safeTransferFrom(solver, request.recipient, assetsToUser);
 
             emit AtomicRequestFulfilled(
-                user, address(offer), address(want), request.offerAmount, assetsToUser, block.timestamp
+                user, address(offer), address(want), request.recipient, request.offerAmount, assetsToUser, block.timestamp
             );
 
             request.offerAmount = 0;
