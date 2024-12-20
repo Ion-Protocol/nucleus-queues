@@ -4,7 +4,7 @@ forge-std/=lib/forge-std/src/
 @ds-test/=lib/forge-std/lib/ds-test/src/
 ds-test/=lib/forge-std/lib/ds-test/src/
 @openzeppelin/=lib/openzeppelin-contracts/
-@ion-protocol/=lib/nucleus-boring-vault/lib/ion-protocol/src/
+@nucleus-boring-vault/=lib/nucleus-boring-vault/src/
 
 @layerzerolabs/=node_modules/@layerzerolabs/
 @executooor/=lib/executooor/contracts/
