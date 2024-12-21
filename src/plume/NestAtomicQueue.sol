@@ -28,7 +28,7 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
     // Public State
     address public vault; // The only vault token the user can redeem.
     address public asset; // The only asset the user can withdraw into.
-    
+
     IAccountantWithRateProviders public accountant;
 
     uint256 public deadlinePeriod;
@@ -38,6 +38,7 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
 
     error InvalidOwner();
     error InvalidController();
+    error InvalidAccountant();
 
     // Events
 
@@ -55,7 +56,13 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
         address _asset,
         uint256 _deadlinePeriod,
         uint256 _pricePercentage
-    ) AtomicQueueUCP(_owner, _approvedSolveCallers) {
+    )
+        AtomicQueueUCP(_owner, _approvedSolveCallers)
+    {
+        if (IAccountantWithRateProviders(_accountant).vault() != _vault) {
+            revert InvalidAccountant();
+        }
+
         vault = _vault;
         accountant = IAccountantWithRateProviders(_accountant);
 
@@ -67,18 +74,21 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
     // Admin Functions
 
     /**
-     * @notice Sets the accountant for the queue. 
+     * @notice Sets the accountant for the queue.
      * @dev The accountant must be for the vault, so we enforce the connection
-     * on chain. 
+     * on chain.
      * @param _accountant The new accountant
      */
-    function setAccountant(address _accountant) external onlyOwner {
+    function setVaultAndAccountant(address _vault, address _accountant) external onlyOwner {
+        if (IAccountantWithRateProviders(_accountant).vault() != _vault) {
+            revert InvalidAccountant();
+        }
         accountant = IAccountantWithRateProviders(_accountant);
-        vault = accountant.vault();
+        vault = _vault;
     }
 
     /**
-     * @notice Sets the asset to withdraw into for the queue. 
+     * @notice Sets the asset to withdraw into for the queue.
      * @param _asset The new asset
      */
     function setAsset(address _asset) external onlyOwner {
@@ -106,7 +116,8 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
         // Create and submit atomic request
         AtomicRequest memory request = AtomicRequest({
             deadline: (block.timestamp + deadlinePeriod.toUint64()).toUint64(),
-            atomicPrice: accountant.getRateInQuote(ERC20(asset)).mulDivDown(pricePercentage, 10000).toUint88(), // Price per share in terms of asset
+            atomicPrice: accountant.getRateInQuote(ERC20(asset)).mulDivDown(pricePercentage, 10_000).toUint88(), // Price
+                // per share in terms of asset
             offerAmount: uint96(shares),
             inSolve: false
         });
