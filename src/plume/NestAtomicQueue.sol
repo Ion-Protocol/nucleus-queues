@@ -39,12 +39,18 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
     error InvalidOwner();
     error InvalidController();
     error InvalidAccountant();
+    error ZeroAddress();
+    error ZeroDeadlinePeriod();
 
     // Events
 
     event RedeemRequest(
         address indexed controller, address indexed owner, uint256 indexed requestId, address sender, uint256 shares
     );
+    event SetDeadlinePeriod(uint256 deadlinePeriod);
+    event SetVaultAndAccountant(address vault, address accountant);
+    event SetAsset(address asset);
+    event SetPricePercentage(uint256 pricePercentage);
 
     // Constructor
 
@@ -59,9 +65,19 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
     )
         AtomicQueueUCP(_owner, _approvedSolveCallers)
     {
-        if (IAccountantWithRateProviders(_accountant).vault() != _vault) {
-            revert InvalidAccountant();
+        if (IAccountantWithRateProviders(_accountant).vault() != _vault) revert InvalidAccountant();
+
+        if (_owner == address(0) || _vault == address(0) || _accountant == address(0) || _asset == address(0)) {
+            revert ZeroAddress();
         }
+
+        for (uint256 i = 0; i < _approvedSolveCallers.length; i++) {
+            if (_approvedSolveCallers[i] == address(0)) {
+                revert ZeroAddress();
+            }
+        }
+
+        if (_deadlinePeriod == 0) revert ZeroDeadlinePeriod();
 
         vault = _vault;
         accountant = IAccountantWithRateProviders(_accountant);
@@ -85,6 +101,7 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
         }
         accountant = IAccountantWithRateProviders(_accountant);
         vault = _vault;
+        emit SetVaultAndAccountant(_vault, _accountant);
     }
 
     /**
@@ -93,6 +110,18 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
      */
     function setAsset(address _asset) external onlyOwner {
         asset = _asset;
+        emit SetAsset(_asset);
+    }
+
+    function setDeadlinePeriod(uint256 _deadlinePeriod) external onlyOwner {
+        if (_deadlinePeriod == 0) revert ZeroDeadlinePeriod();
+        deadlinePeriod = _deadlinePeriod;
+        emit SetDeadlinePeriod(_deadlinePeriod);
+    }
+
+    function setPricePercentage(uint256 _pricePercentage) external onlyOwner {
+        pricePercentage = _pricePercentage;
+        emit SetPricePercentage(_pricePercentage);
     }
 
     // User Functions
