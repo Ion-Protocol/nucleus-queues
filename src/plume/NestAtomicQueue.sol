@@ -45,6 +45,10 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
     event RedeemRequest(
         address indexed controller, address indexed owner, uint256 indexed requestId, address sender, uint256 shares
     );
+    event SetDeadlinePeriod(uint256 deadlinePeriod);
+    event SetVaultAndAccountant(address vault, address accountant);
+    event SetAsset(address asset);
+    event SetPricePercentage(uint256 pricePercentage);
 
     // Constructor
 
@@ -85,6 +89,7 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
         }
         accountant = IAccountantWithRateProviders(_accountant);
         vault = _vault;
+        emit SetVaultAndAccountant(_vault, _accountant);
     }
 
     /**
@@ -93,6 +98,18 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
      */
     function setAsset(address _asset) external onlyOwner {
         asset = _asset;
+        emit SetAsset(_asset);
+    }
+
+    function setDeadlinePeriod(uint256 _deadlinePeriod) external onlyOwner {
+        if (_deadlinePeriod == 0) revert ZeroDeadlinePeriod();
+        deadlinePeriod = _deadlinePeriod;
+        emit SetDeadlinePeriod(_deadlinePeriod);
+    }
+
+    function setPricePercentage(uint256 _pricePercentage) external onlyOwner {
+        pricePercentage = _pricePercentage;
+        emit SetPricePercentage(_pricePercentage);
     }
 
     // User Functions
