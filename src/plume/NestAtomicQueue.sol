@@ -39,6 +39,8 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
     error InvalidOwner();
     error InvalidController();
     error InvalidAccountant();
+    error ZeroAddress();
+    error ZeroDeadlinePeriod();
 
     // Events
 
@@ -63,9 +65,19 @@ contract NestAtomicQueueUCP is AtomicQueueUCP {
     )
         AtomicQueueUCP(_owner, _approvedSolveCallers)
     {
-        if (IAccountantWithRateProviders(_accountant).vault() != _vault) {
-            revert InvalidAccountant();
+        if (IAccountantWithRateProviders(_accountant).vault() != _vault) revert InvalidAccountant();
+
+        if (_owner == address(0) || _vault == address(0) || _accountant == address(0) || _asset == address(0)) {
+            revert ZeroAddress();
         }
+
+        for (uint256 i = 0; i < _approvedSolveCallers.length; i++) {
+            if (_approvedSolveCallers[i] == address(0)) {
+                revert ZeroAddress();
+            }
+        }
+
+        if (_deadlinePeriod == 0) revert ZeroDeadlinePeriod();
 
         vault = _vault;
         accountant = IAccountantWithRateProviders(_accountant);
