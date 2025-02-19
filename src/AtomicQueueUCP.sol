@@ -36,10 +36,10 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
      * @param recipient the address to receive want assets
      */
     struct AtomicRequest {
-        uint64 deadline;    // Timestamp when request expires
+        uint64 deadline; // Timestamp when request expires
         uint96 atomicPrice; // User's limit price in want asset decimals
         uint96 offerAmount; // Amount of offer asset to sell
-        address recipient;  // Address to receive want assets
+        address recipient; // Address to receive want assets
     }
 
     /**
@@ -72,6 +72,8 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     error AtomicQueue__ZeroOfferAmount(address user);
     error AtomicQueue__PriceAboveClearing(address user);
     error AtomicQueue__UnapprovedSolveCaller(address user);
+    error AtomicQueue__InvalidRecipient(address user);
+    error AtomicQueue__InvalidRequest();
 
     // ========================================= EVENTS =========================================
 
@@ -176,6 +178,17 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     }
 
     /**
+     * @notice Allows user to cancel their atomic request easily.
+     * @param offer the ERC20 token the user is offering in exchange for the want
+     * @param want the ERC20 token the user wants in exchange for offer
+     */
+    function cancelAtomicRequest(ERC20 offer, ERC20 want) external {
+        delete userAtomicRequest[msg.sender][offer][want];
+
+        emit AtomicRequestUpdated(msg.sender, address(offer), address(want), address(0), 0, 0, 0, 0);
+    }
+
+    /**
      * @notice Allows user to add/update their withdraw request.
      * @notice It is possible for a withdraw request with a zero atomicPrice to be made, and solved.
      *         If this happens, users will be selling their shares for no assets in return.
@@ -188,6 +201,8 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     function updateAtomicRequest(ERC20 offer, ERC20 want, AtomicRequest calldata userRequest) external nonReentrant {
         // Update user's request in storage
         AtomicRequest storage request = userAtomicRequest[msg.sender][offer][want];
+
+        _checkRecipientAmountDeadline(userRequest);
 
         request.deadline = userRequest.deadline;
         request.atomicPrice = userRequest.atomicPrice;
@@ -266,9 +281,8 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
             }
 
             if (isInSolve == 1) revert AtomicQueue__UserRepeated(user);
-            if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(user);
-            if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount(user);
             if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(user);
+            _checkRecipientAmountDeadline(request);
 
             assembly {
                 tstore(key, 1)
@@ -308,7 +322,13 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
             want.safeTransferFrom(solver, request.recipient, assetsToUser);
 
             emit AtomicRequestFulfilled(
-                user, address(offer), address(want), request.recipient, request.offerAmount, assetsToUser, block.timestamp
+                user,
+                address(offer),
+                address(want),
+                request.recipient,
+                request.offerAmount,
+                assetsToUser,
+                block.timestamp
             );
 
             request.offerAmount = 0;
@@ -395,5 +415,11 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         returns (uint256)
     {
         return clearingPrice.mulDivDown(offerAmount, 10 ** offerDecimals);
+    }
+
+    function _checkRecipientAmountDeadline(AtomicRequest memory request) internal view {
+        if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(user);
+        if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount(user);
+        if (request.recipient == address(0)) revert AtomicQueue__InvalidRecipient(user);
     }
 }

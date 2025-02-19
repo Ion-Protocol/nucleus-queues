@@ -93,8 +93,12 @@ contract AtomicQueueUCPTest is Test {
 
     function test_IsAtomicRequestValid_ExpiredDeadline() public {
         uint64 deadline = uint64(block.timestamp + 1 hours);
-        AtomicQueueUCP.AtomicRequest memory request =
-            AtomicQueueUCP.AtomicRequest({ deadline: deadline, atomicPrice: 5e6, offerAmount: 1e18, recipient: USER_ONE });
+        AtomicQueueUCP.AtomicRequest memory request = AtomicQueueUCP.AtomicRequest({
+            deadline: deadline,
+            atomicPrice: 5e6,
+            offerAmount: 1e18,
+            recipient: USER_ONE
+        });
 
         // Move time forward past the deadline
         vm.warp(deadline + 1);
@@ -294,8 +298,12 @@ contract AtomicQueueUCPTest is Test {
 
     function test_ViewSolveMetaData_MultipleFlags() public {
         uint64 deadline = uint64(block.timestamp + 1 hours);
-        AtomicQueueUCP.AtomicRequest memory request =
-            AtomicQueueUCP.AtomicRequest({ deadline: deadline, atomicPrice: 5e6, offerAmount: 1e18, recipient: USER_ONE });
+        AtomicQueueUCP.AtomicRequest memory request = AtomicQueueUCP.AtomicRequest({
+            deadline: deadline,
+            atomicPrice: 5e6,
+            offerAmount: 1e18,
+            recipient: USER_ONE
+        });
 
         vm.prank(USER_ONE);
         queue.updateAtomicRequest(offerToken, wantToken, request);
