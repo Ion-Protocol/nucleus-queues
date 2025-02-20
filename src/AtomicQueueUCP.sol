@@ -198,7 +198,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
      * @param want the ERC20 token the user wants in exchange for offer
      * @param userRequest the users request
      */
-    function updateAtomicRequest(ERC20 offer, ERC20 want, AtomicRequest calldata userRequest) external nonReentrant {
+    function updateAtomicRequest(ERC20 offer, ERC20 want, AtomicRequest memory userRequest) public nonReentrant {
         // Update user's request in storage
         AtomicRequest storage request = userAtomicRequest[msg.sender][offer][want];
 
