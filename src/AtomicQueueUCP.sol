@@ -29,18 +29,17 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
 
     /**
      * @notice Stores request information needed to fulfill a users atomic request.
-     * @dev The `inSolve` bool is kept in this queue iteration for backwards compatibility, but not utilized.
      * @param deadline unix timestamp for when request is no longer valid
      * @param atomicPrice the price in terms of `want` asset the user wants their `offer` assets "sold" at
      * @dev atomicPrice MUST be in terms of `want` asset decimals.
      * @param offerAmount the amount of `offer` asset the user wants converted to `want` asset
-     * @param inSolve bool used during solves to prevent duplicate users, and to prevent redoing multiple checks
+     * @param recipient the address to receive want assets
      */
     struct AtomicRequest {
         uint64 deadline; // Timestamp when request expires
-        uint88 atomicPrice; // User's limit price in want asset decimals
+        uint96 atomicPrice; // User's limit price in want asset decimals
         uint96 offerAmount; // Amount of offer asset to sell
-        bool inSolve; // Prevents double-processing in solve
+        address recipient; // Address to receive want assets
     }
 
     /**
@@ -73,6 +72,8 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     error AtomicQueue__ZeroOfferAmount(address user);
     error AtomicQueue__PriceAboveClearing(address user);
     error AtomicQueue__UnapprovedSolveCaller(address user);
+    error AtomicQueue__InvalidRecipient(address user);
+    error AtomicQueue__InvalidRequest();
 
     // ========================================= EVENTS =========================================
 
@@ -80,6 +81,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         address user,
         address offerToken,
         address wantToken,
+        address recipient,
         uint256 amount,
         uint256 deadline,
         uint256 minPrice,
@@ -90,6 +92,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         address user,
         address offerToken,
         address wantToken,
+        address recipient,
         uint256 offerAmountSpent,
         uint256 wantAmountReceived,
         uint256 timestamp
@@ -169,8 +172,20 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         // Check non-zero amounts
         if (userRequest.offerAmount == 0) return false;
         if (userRequest.atomicPrice == 0) return false;
+        if (userRequest.recipient == address(0)) return false;
 
         return true;
+    }
+
+    /**
+     * @notice Allows user to cancel their atomic request easily.
+     * @param offer the ERC20 token the user is offering in exchange for the want
+     * @param want the ERC20 token the user wants in exchange for offer
+     */
+    function cancelAtomicRequest(ERC20 offer, ERC20 want) external {
+        delete userAtomicRequest[msg.sender][offer][want];
+
+        emit AtomicRequestUpdated(msg.sender, address(offer), address(want), address(0), 0, 0, 0, 0);
     }
 
     /**
@@ -187,15 +202,19 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         // Update user's request in storage
         AtomicRequest storage request = userAtomicRequest[msg.sender][offer][want];
 
+        _checkRecipientAmountDeadline(userRequest);
+
         request.deadline = userRequest.deadline;
         request.atomicPrice = userRequest.atomicPrice;
         request.offerAmount = userRequest.offerAmount;
+        request.recipient = userRequest.recipient;
 
         // Emit update event with full request details
         emit AtomicRequestUpdated(
             msg.sender,
             address(offer),
             address(want),
+            userRequest.recipient,
             userRequest.offerAmount,
             userRequest.deadline,
             userRequest.atomicPrice,
@@ -262,9 +281,8 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
             }
 
             if (isInSolve == 1) revert AtomicQueue__UserRepeated(user);
-            if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(user);
-            if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount(user);
             if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(user);
+            _checkRecipientAmountDeadline(request);
 
             assembly {
                 tstore(key, 1)
@@ -290,7 +308,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
                 --i;
             }
             address user = users[i];
-            AtomicRequest storage request = userAtomicRequest[users[i]][offer][want];
+            AtomicRequest storage request = userAtomicRequest[user][offer][want];
             bytes32 key = keccak256(abi.encode(user, offer, want));
 
             uint256 isInSolve;
@@ -301,10 +319,16 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
             if (isInSolve == 0) revert AtomicQueue__UserNotInSolve(user);
 
             uint256 assetsToUser = _calculateAssetAmount(request.offerAmount, clearingPrice, offerDecimals);
-            want.safeTransferFrom(solver, user, assetsToUser);
+            want.safeTransferFrom(solver, request.recipient, assetsToUser);
 
             emit AtomicRequestFulfilled(
-                user, address(offer), address(want), request.offerAmount, assetsToUser, block.timestamp
+                user,
+                address(offer),
+                address(want),
+                request.recipient,
+                request.offerAmount,
+                assetsToUser,
+                block.timestamp
             );
 
             request.offerAmount = 0;
@@ -391,5 +415,11 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         returns (uint256)
     {
         return clearingPrice.mulDivDown(offerAmount, 10 ** offerDecimals);
+    }
+
+    function _checkRecipientAmountDeadline(AtomicRequest memory request) internal view {
+        if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(user);
+        if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount(user);
+        if (request.recipient == address(0)) revert AtomicQueue__InvalidRecipient(user);
     }
 }
