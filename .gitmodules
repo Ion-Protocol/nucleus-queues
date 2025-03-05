@@ -6,7 +6,7 @@
 	url = https://github.com/transmissions11/solmate
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
-	url = https://github.com/openZeppelin/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
 [submodule "lib/ion-protocol"]
 	path = lib/ion-protocol
 	url = https://github.com/Ion-Protocol/nucleus-boring-vault
