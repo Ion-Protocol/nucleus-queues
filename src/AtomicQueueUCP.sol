@@ -418,8 +418,8 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     }
 
     function _checkRecipientAmountDeadline(AtomicRequest memory request) internal view {
-        if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(user);
-        if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount(user);
-        if (request.recipient == address(0)) revert AtomicQueue__InvalidRecipient(user);
+        if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(request.recipient);
+        if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount(request.recipient);
+        if (request.recipient == address(0)) revert AtomicQueue__InvalidRecipient(request.recipient);
     }
 }
