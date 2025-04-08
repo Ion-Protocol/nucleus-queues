@@ -73,6 +73,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     error AtomicQueue__PriceAboveClearing(address user);
     error AtomicQueue__UnapprovedSolveCaller(address user);
     error AtomicQueue__InvalidRecipient(address user);
+    error AtomicQueue__ZeroAtomicPrice(address user);
 
     // ========================================= EVENTS =========================================
 
@@ -420,6 +421,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
 
         if (isInSolve == 1) revert AtomicQueue__UserRepeated(user);
         if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(user);
+        if (request.atomicPrice == 0) revert AtomicQueue__ZeroAtomicPrice(user);
         _checkRecipientAmountDeadline(request);
 
         assembly {
