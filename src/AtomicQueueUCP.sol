@@ -67,13 +67,13 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     // ========================================= ERRORS =========================================
 
     error AtomicQueue__UserRepeated(address user);
-    error AtomicQueue__RequestDeadlineExceeded(address user);
+    error AtomicQueue__RequestDeadlineExceeded();
     error AtomicQueue__UserNotInSolve(address user);
-    error AtomicQueue__ZeroOfferAmount(address user);
-    error AtomicQueue__PriceAboveClearing(address user);
+    error AtomicQueue__ZeroOfferAmount();
+    error AtomicQueue__PriceAboveClearing(uint256 price);
     error AtomicQueue__UnapprovedSolveCaller(address user);
     error AtomicQueue__InvalidRecipient(address user);
-    error AtomicQueue__ZeroAtomicPrice(address user);
+    error AtomicQueue__ZeroAtomicPrice();
 
     // ========================================= EVENTS =========================================
 
@@ -420,8 +420,8 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         }
 
         if (isInSolve == 1) revert AtomicQueue__UserRepeated(user);
-        if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(user);
-        if (request.atomicPrice == 0) revert AtomicQueue__ZeroAtomicPrice(user);
+        if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(request.atomicPrice);
+        if (request.atomicPrice == 0) revert AtomicQueue__ZeroAtomicPrice();
         _checkRecipientAmountDeadline(request);
 
         assembly {
@@ -432,8 +432,8 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     }
 
     function _checkRecipientAmountDeadline(AtomicRequest memory request) internal view {
-        if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(user);
-        if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount(user);
-        if (request.recipient == address(0)) revert AtomicQueue__InvalidRecipient(user);
+        if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded();
+        if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount();
+        if (request.recipient == address(0)) revert AtomicQueue__InvalidRecipient(request.recipient);
     }
 }
