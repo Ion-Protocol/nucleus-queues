@@ -223,7 +223,7 @@ contract AtomicQueueUCPTest is Test {
         assertEq(wantToken.balanceOf(USER_TWO), 10e6);
     }
 
-    function testFail_SolveWithLowerClearingPrice() public {
+    function testReverts_SolveWithLowerClearingPrice() public {
         AtomicQueueUCP.AtomicRequest memory request = AtomicQueueUCP.AtomicRequest({
             deadline: uint64(block.timestamp + 1 hours),
             atomicPrice: 5e6,
@@ -241,6 +241,7 @@ contract AtomicQueueUCPTest is Test {
         bytes memory runData = abi.encode(clearingPrice);
 
         vm.prank(address(solver));
+        vm.expectRevert();
         queue.solve(offerToken, wantToken, users, runData, address(solver), clearingPrice);
     }
 
@@ -336,12 +337,13 @@ contract AtomicQueueUCPTest is Test {
         assertTrue(queue.isApprovedSolveCaller(newSolver));
     }
 
-    function testFail_ToggleApprovedSolveCallers_NonOwner() public {
+    function testReverts_ToggleApprovedSolveCallers_NonOwner() public {
         address newSolver = makeAddr("NewSolver");
         address[] memory solvers = new address[](1);
         solvers[0] = newSolver;
 
         vm.prank(USER_ONE);
+        vm.expectRevert();
         queue.toggleApprovedSolveCallers(solvers);
     }
 }
