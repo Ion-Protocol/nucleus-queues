@@ -78,9 +78,9 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     // ========================================= EVENTS =========================================
 
     event AtomicRequestUpdated(
-        address user,
-        address offerToken,
-        address wantToken,
+        address indexed user,
+        address indexed offerToken,
+        address indexed wantToken,
         address recipient,
         uint256 amount,
         uint256 deadline,
@@ -90,15 +90,15 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
 
     event AtomicRequestFulfilled(
         address user,
-        address offerToken,
-        address wantToken,
-        address recipient,
+        address indexed offerToken,
+        address indexed wantToken,
+        address indexed recipient,
         uint256 offerAmountSpent,
         uint256 wantAmountReceived,
         uint256 timestamp
     );
 
-    event SolverCallerToggled(address caller, bool isApproved);
+    event SolverCallerToggled(address indexed caller, bool isApproved);
 
     // ========================================= STORAGE =========================================
 
