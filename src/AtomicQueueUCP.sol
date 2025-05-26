@@ -67,12 +67,12 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     // ========================================= ERRORS =========================================
 
     error AtomicQueue__UserRepeated(address user);
-    error AtomicQueue__RequestDeadlineExceeded();
+    error AtomicQueue__RequestDeadlineExceeded(uint64 deadline);
     error AtomicQueue__UserNotInSolve(address user);
     error AtomicQueue__ZeroOfferAmount();
-    error AtomicQueue__PriceAboveClearing(uint256 price);
-    error AtomicQueue__UnapprovedSolveCaller(address user);
-    error AtomicQueue__InvalidRecipient(address user);
+    error AtomicQueue__PriceAboveClearing(uint96 price, uint256 clearingPrice);
+    error AtomicQueue__UnapprovedSolveCaller(address caller);
+    error AtomicQueue__InvalidRecipient(address recipient);
     error AtomicQueue__ZeroAtomicPrice();
 
     // ========================================= EVENTS =========================================
@@ -190,10 +190,6 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
 
     /**
      * @notice Allows user to add/update their withdraw request.
-     * @notice It is possible for a withdraw request with a zero atomicPrice to be made, and solved.
-     *         If this happens, users will be selling their shares for no assets in return.
-     *         To determine a safe atomicPrice, share.previewRedeem should be used to get
-     *         a good share price, then the user can lower it from there to make their request fill faster.
      * @param offer the ERC20 token the user is offering in exchange for the want
      * @param want the ERC20 token the user wants in exchange for offer
      * @param userRequest the users request
@@ -420,7 +416,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         }
 
         if (isInSolve == 1) revert AtomicQueue__UserRepeated(user);
-        if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(request.atomicPrice);
+        if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(request.atomicPrice, clearingPrice);
         if (request.atomicPrice == 0) revert AtomicQueue__ZeroAtomicPrice();
         _checkRecipientAmountDeadline(request);
 
@@ -432,7 +428,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     }
 
     function _checkRecipientAmountDeadline(AtomicRequest memory request) internal view {
-        if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded();
+        if (block.timestamp > request.deadline) revert AtomicQueue__RequestDeadlineExceeded(request.deadline);
         if (request.offerAmount == 0) revert AtomicQueue__ZeroOfferAmount();
         if (request.recipient == address(0)) revert AtomicQueue__InvalidRecipient(request.recipient);
     }
