@@ -7,6 +7,7 @@ import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
 import { Test } from "@forge-std/Test.sol";
 import { console2 } from "forge-std/console2.sol";
 import { MockERC20, MockSolver } from "./Mocks.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract AtomicQueueUCPTest is Test {
     using FixedPointMathLib for uint256;
@@ -223,7 +224,7 @@ contract AtomicQueueUCPTest is Test {
         assertEq(wantToken.balanceOf(USER_TWO), 10e6);
     }
 
-    function testFail_SolveWithLowerClearingPrice() public {
+    function testRevert_SolveWithLowerClearingPrice() public {
         AtomicQueueUCP.AtomicRequest memory request = AtomicQueueUCP.AtomicRequest({
             deadline: uint64(block.timestamp + 1 hours),
             atomicPrice: 5e6,
@@ -240,6 +241,14 @@ contract AtomicQueueUCPTest is Test {
         uint256 clearingPrice = 4e6; // Lower than user's atomic price - should fail
         bytes memory runData = abi.encode(clearingPrice);
 
+        // Expect revert with a specific error message or revert reason
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AtomicQueueUCP.AtomicQueue__PriceAboveClearing.selector,
+                5e6, // atomicPrice
+                4e6 // clearingPrice
+            )
+        );
         vm.prank(address(solver));
         queue.solve(offerToken, wantToken, users, runData, address(solver), clearingPrice);
     }
@@ -336,12 +345,19 @@ contract AtomicQueueUCPTest is Test {
         assertTrue(queue.isApprovedSolveCaller(newSolver));
     }
 
-    function testFail_ToggleApprovedSolveCallers_NonOwner() public {
+    function testRevert_ToggleApprovedSolveCallers_NonOwner() public {
         address newSolver = makeAddr("NewSolver");
         address[] memory solvers = new address[](1);
         solvers[0] = newSolver;
 
-        vm.prank(USER_ONE);
-        queue.toggleApprovedSolveCallers(solvers);
+        // Expect revert with a specific error message or revert reason
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Ownable.OwnableUnauthorizedAccount.selector,
+                USER_ONE // The address that is unauthorized (non-owner)
+            )
+        );
+        vm.prank(USER_ONE); // Set the msg.sender to USER_ONE
+        queue.toggleApprovedSolveCallers(solvers); // Call the function
     }
 }
