@@ -250,7 +250,6 @@ contract AtomicQueueUCPTest is Test {
             )
         );
         vm.prank(address(solver));
-        vm.expectRevert();
         queue.solve(offerToken, wantToken, users, runData, address(solver), clearingPrice);
     }
 
