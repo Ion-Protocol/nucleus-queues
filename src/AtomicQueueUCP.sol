@@ -122,7 +122,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
      * @notice Allows owner to toggle approved solve callers.
      * @param solveCallers an array of addresses to toggle approval for
      */
-    function toggleApprovedSolveCallers(address[] memory solveCallers) external onlyOwner {
+    function toggleApprovedSolveCallers(address[] calldata solveCallers) external onlyOwner {
         bool isApproved;
         for (uint256 i; i < solveCallers.length; ++i) {
             isApproved = !isApprovedSolveCaller[solveCallers[i]];
