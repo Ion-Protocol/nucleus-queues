@@ -289,7 +289,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
                 --i;
             }
             address user = users[i];
-            AtomicRequest storage request = userAtomicRequest[user][offer][want];
+            AtomicRequest memory request = userAtomicRequest[user][offer][want];
             bytes32 key = keccak256(abi.encode(user, offer, want));
 
             uint256 isInSolve;
@@ -312,7 +312,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
                 block.timestamp
             );
 
-            request.offerAmount = 0;
+            userAtomicRequest[user][offer][want].offerAmount = 0;
             assembly {
                 tstore(key, 0)
             }
