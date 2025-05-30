@@ -266,6 +266,7 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
             unchecked {
                 --i;
             }
+            
             AtomicRequest memory request = _firstLoopHelper(users[i], offer, want, clearingPrice, solver);           
             
             assetsToOffer += request.offerAmount;
