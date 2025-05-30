@@ -244,7 +244,8 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
     {
         if (!isApprovedSolveCaller[msg.sender]) revert AtomicQueue__UnapprovedSolveCaller(msg.sender);
         uint8 offerDecimals = offer.decimals();
-        (uint256 assetsToOffer, uint256 assetsForWant) = _handleFirstLoop(offer, want, users, clearingPrice, solver, offerDecimals);
+        (uint256 assetsToOffer, uint256 assetsForWant) =
+            _handleFirstLoop(offer, want, users, clearingPrice, solver, offerDecimals);
 
         IAtomicSolver(solver).finishSolve(runData, msg.sender, offer, want, assetsToOffer, assetsForWant);
 
@@ -266,9 +267,9 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
             unchecked {
                 --i;
             }
-            
-            AtomicRequest memory request = _firstLoopHelper(users[i], offer, want, clearingPrice, solver);           
-            
+
+            AtomicRequest memory request = _firstLoopHelper(users[i], offer, want, clearingPrice, solver);
+
             assetsToOffer += request.offerAmount;
             assetsForWant += _calculateAssetAmount(request.offerAmount, clearingPrice, offerDecimals);
         }
@@ -417,7 +418,9 @@ contract AtomicQueueUCP is ReentrancyGuard, Ownable {
         }
 
         if (isInSolve == 1) revert AtomicQueue__UserRepeated(user);
-        if (request.atomicPrice > clearingPrice) revert AtomicQueue__PriceAboveClearing(request.atomicPrice, clearingPrice);
+        if (request.atomicPrice > clearingPrice) {
+            revert AtomicQueue__PriceAboveClearing(request.atomicPrice, clearingPrice);
+        }
         if (request.atomicPrice == 0) revert AtomicQueue__ZeroAtomicPrice();
         _checkRecipientAmountDeadline(request);
 
